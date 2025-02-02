@@ -71,16 +71,28 @@ router.get('/:identifier', async (req, res) => {
 });
 
 // Submit survey response
-router.post('/:id/respond', auth, async (req, res) => {
+router.post('/:id/respond', async (req, res) => {
   try {
     const survey = await Survey.findById(req.params.id);
     if (!survey) {
       return res.status(404).json({ message: 'Survey not found' });
     }
 
+    const { email, answers } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    // Check if email has already submitted a response
+    const hasResponded = survey.responses.some(response => response.email === email);
+    if (hasResponded) {
+      return res.status(400).json({ message: 'You have already submitted a response to this survey' });
+    }
+
     const response = {
-      respondent: req.user.id,
-      answers: req.body.answers
+      email,
+      answers
     };
 
     survey.responses.push(response);
@@ -89,6 +101,45 @@ router.post('/:id/respond', auth, async (req, res) => {
     res.status(201).json({ message: 'Response submitted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Error submitting response', error: error.message });
+  }
+});
+
+// Update survey by ID
+router.put('/:id', auth, async (req, res) => {
+  try {
+    const { title, description, questions, isPublic, endDate } = req.body;
+    const survey = await Survey.findOne({ _id: req.params.id, creator: req.user.id });
+
+    if (!survey) {
+      return res.status(404).json({ message: 'Survey not found or unauthorized' });
+    }
+
+    survey.title = title;
+    survey.description = description;
+    survey.questions = questions;
+    if (isPublic !== undefined) survey.isPublic = isPublic;
+    if (endDate) survey.endDate = endDate;
+
+    await survey.save();
+    res.json(survey);
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating survey', error: error.message });
+  }
+});
+
+// Delete survey by ID
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const survey = await Survey.findOne({ _id: req.params.id, creator: req.user.id });
+
+    if (!survey) {
+      return res.status(404).json({ message: 'Survey not found or unauthorized' });
+    }
+
+    await Survey.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Survey deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting survey', error: error.message });
   }
 });
 

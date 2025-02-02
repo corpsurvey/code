@@ -9,7 +9,7 @@ const questionSchema = new mongoose.Schema({
   questionType: {
     type: String,
     required: true,
-    enum: ['multiple-choice', 'text', 'rating', 'checkbox'],
+    enum: ['multipleChoice', 'text', 'checkbox'],
   },
   options: [{
     type: String,
@@ -52,10 +52,12 @@ const surveySchema = new mongoose.Schema({
   endDate: {
     type: Date
   },
+  // Add this to the surveySchema responses section
   responses: [{
-    respondent: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
+    email: {
+      type: String,
+      required: true,
+      trim: true
     },
     answers: [{
       questionId: {
