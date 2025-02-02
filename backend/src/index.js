@@ -17,6 +17,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/survey-pl
 // Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/surveys', require('./routes/surveys'));
+app.use('/api/shorturl', require('./routes/shortUrl'));
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
