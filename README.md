@@ -89,6 +89,24 @@ The application will be available at:
 - Backend: http://localhost:3001
 
 
+## Docker Deployment
+
+### Prerequisites
+- Docker
+- Docker Compose
+
+### Running with Docker
+
+1. Start the application using Docker Compose:
+```bash
+docker-compose up --build
+```
+
+The application will be available at:
+
+- Frontend: http://localhost:3000
+- Backend: http://localhost:3001
+
 ## Contributing
 1. Fork the repository
 2. Create your feature branch ( git checkout -b feature/AmazingFeature )
