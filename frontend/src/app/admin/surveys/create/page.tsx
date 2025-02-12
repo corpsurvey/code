@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 
 interface Question {
   text: string;
-  type: 'text' | 'multipleChoice' | 'checkbox';  // Updated enum values
+  type: 'text' | 'multipleChoice' | 'checkbox';
   options: string[];
+  required: boolean;
 }
 
 export default function CreateSurvey() {
@@ -17,7 +18,12 @@ export default function CreateSurvey() {
   const [error, setError] = useState('');
 
   const addQuestion = () => {
-    setQuestions([...questions, { text: '', type: 'text', options: [] }]);
+    setQuestions([...questions, { 
+      text: '', 
+      type: 'text', 
+      options: [], 
+      required: false 
+    }]);
   };
 
   const updateQuestion = (index: number, field: keyof Question, value: any) => {
@@ -42,10 +48,12 @@ export default function CreateSurvey() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
+      // handleSubmit içinde formattedQuestions güncellemesi
       const formattedQuestions = questions.map(q => ({
         questionText: q.text,
         questionType: q.type,
-        options: q.options
+        options: q.options.filter(opt => opt.trim() !== ''),
+        required: q.required
       }));
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/surveys`, {
@@ -119,15 +127,31 @@ export default function CreateSurvey() {
                 {questions.map((question, questionIndex) => (
                   <div key={questionIndex} className="bg-gray-50 p-4 rounded-lg mb-4">
                     <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-900">Question Text</label>
-                        <input
-                          type="text"
-                          value={question.text}
-                          onChange={(e) => updateQuestion(questionIndex, 'text', e.target.value)}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900"
-                          required
-                        />
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-900">
+                            Question Text {question.required && <span className="text-red-500">*</span>}
+                          </label>
+                          <input
+                            type="text"
+                            value={question.text}
+                            onChange={(e) => updateQuestion(questionIndex, 'text', e.target.value)}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900"
+                            required
+                          />
+                        </div>
+                        <div className="ml-4 flex items-center mt-6">
+                          <input
+                            type="checkbox"
+                            id={`required-${questionIndex}`}
+                            checked={question.required}
+                            onChange={(e) => updateQuestion(questionIndex, 'required', e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <label htmlFor={`required-${questionIndex}`} className="ml-2 text-sm text-gray-600">
+                            Required
+                          </label>
+                        </div>
                       </div>
 
                       <div>

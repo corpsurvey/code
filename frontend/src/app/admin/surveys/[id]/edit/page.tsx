@@ -7,6 +7,7 @@ interface Question {
   text: string;
   type: 'text' | 'multipleChoice' | 'checkbox';
   options: string[];
+  required: boolean; // Yeni eklenen alan
 }
 
 interface Survey {
@@ -18,6 +19,7 @@ interface Survey {
     questionText: string;
     questionType: string;
     options: string[];
+    required: boolean; // Yeni eklenen alan
   }[];
 }
 
@@ -46,11 +48,66 @@ export default function EditSurvey({ params }: { params: { id: string } }) {
         const data: Survey = await response.json();
         setTitle(data.title);
         setDescription(data.description);
+        // fetchSurvey içinde mapping güncelleme
         setQuestions(data.questions.map(q => ({
           text: q.questionText,
           type: q.questionType as any,
-          options: q.options || []
+          options: q.options || [],
+          required: q.required || false // Varsayılan false
         })));
+        
+        // Yeni soru ekleme fonksiyonu güncelleme
+        const addQuestion = () => {
+          setQuestions([...questions, { 
+            text: '', 
+            type: 'text', 
+            options: [],
+            required: false // Varsayılan false
+          }]);
+        };
+        
+        // handleSubmit içinde formattedQuestions güncelleme
+        const formattedQuestions = questions.map(q => ({
+          questionText: q.text,
+          questionType: q.type,
+          options: q.options.filter(opt => opt.trim() !== ''),
+          required: q.required
+        }));
+        
+        // Soru form alanında required checkbox ekleme
+        {questions.map((question, questionIndex) => (
+          <div key={questionIndex} className="bg-gray-50 p-4 rounded-lg mb-4">
+            // Question alanında required checkbox'ı ekleyelim
+            <div className="space-y-4">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-900">Question Text</label>
+                  <input
+                    type="text"
+                    value={question.text}
+                    onChange={(e) => updateQuestion(questionIndex, 'text', e.target.value)}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900"
+                    required
+                  />
+                </div>
+                <div className="ml-4 flex items-center mt-6">
+                  <input
+                    type="checkbox"
+                    id={`required-${questionIndex}`}
+                    checked={question.required}
+                    onChange={(e) => updateQuestion(questionIndex, 'required', e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <label htmlFor={`required-${questionIndex}`} className="ml-2 text-sm text-gray-600">
+                    Required
+                  </label>
+                </div>
+              </div>
+              
+              {/* ... mevcut question type ve options kodu ... */}
+            </div>
+          </div>
+        ))}
       } catch (error: any) {
         setError(error.message);
       } finally {
@@ -63,14 +120,29 @@ export default function EditSurvey({ params }: { params: { id: string } }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation for checkbox questions
+    const hasInvalidCheckbox = questions.some(q => {
+      if (q.type === 'checkbox') {
+        // En az bir option olmalı ve boş option olmamalı
+        return q.options.length === 0 || q.options.some(opt => !opt.trim());
+      }
+      return false;
+    });
+    
+    if (hasInvalidCheckbox) {
+      setError('Checkbox questions must have at least one non-empty option');
+      return;
+    }
+    
     try {
       const token = localStorage.getItem('token');
       const formattedQuestions = questions.map(q => ({
         questionText: q.text,
         questionType: q.type,
-        options: q.options
+        options: q.options.filter(opt => opt.trim() !== '') // Boş optionları filtrele
       }));
-
+    
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/surveys/${params.id}`, {
         method: 'PUT',
         headers: {
@@ -96,7 +168,7 @@ export default function EditSurvey({ params }: { params: { id: string } }) {
   };
 
   const addQuestion = () => {
-    setQuestions([...questions, { text: '', type: 'text', options: [] }]);
+    setQuestions([...questions, { text: '', type: 'text', options: [], required: false }]);
   };
 
   const updateQuestion = (index: number, field: keyof Question, value: any) => {
@@ -105,9 +177,17 @@ export default function EditSurvey({ params }: { params: { id: string } }) {
     setQuestions(updatedQuestions);
   };
 
+  // Option ekleme ve güncelleme fonksiyonlarını da güncelleyelim
   const addOption = (questionIndex: number) => {
     const updatedQuestions = [...questions];
-    updatedQuestions[questionIndex].options.push('');
+    const currentQuestion = updatedQuestions[questionIndex];
+    
+    // Checkbox için sadece bir option'a izin ver
+    if (currentQuestion.type === 'checkbox' && currentQuestion.options.length >= 1) {
+      return;
+    }
+    
+    currentQuestion.options.push('');
     setQuestions(updatedQuestions);
   };
 
@@ -175,17 +255,33 @@ export default function EditSurvey({ params }: { params: { id: string } }) {
                 {questions.map((question, questionIndex) => (
                   <div key={questionIndex} className="bg-gray-50 p-4 rounded-lg mb-4">
                     <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-900">Question Text</label>
-                        <input
-                          type="text"
-                          value={question.text}
-                          onChange={(e) => updateQuestion(questionIndex, 'text', e.target.value)}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900"
-                          required
-                        />
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-900">
+                            Question Text {question.required && <span className="text-red-500">*</span>}
+                          </label>
+                          <input
+                            type="text"
+                            value={question.text}
+                            onChange={(e) => updateQuestion(questionIndex, 'text', e.target.value)}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900"
+                            required
+                          />
+                        </div>
+                        <div className="ml-4 flex items-center mt-6">
+                          <input
+                            type="checkbox"
+                            id={`required-${questionIndex}`}
+                            checked={question.required}
+                            onChange={(e) => updateQuestion(questionIndex, 'required', e.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <label htmlFor={`required-${questionIndex}`} className="ml-2 text-sm text-gray-600">
+                            Required
+                          </label>
+                        </div>
                       </div>
-
+                      
                       <div>
                         <label className="block text-sm font-medium text-gray-900">Question Type</label>
                         <select

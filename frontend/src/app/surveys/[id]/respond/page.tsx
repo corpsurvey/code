@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+// Survey interface'ini güncelle
 interface Question {
   _id: string;
   questionText: string;
   questionType: string;
   options: string[];
+  required: boolean;
 }
 
 interface Survey {
@@ -20,7 +22,7 @@ interface Survey {
   };
 }
 
-export default function RespondSurvey({ params }: { params: { id: string } }) {
+export default function RespondSurvey({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [survey, setSurvey] = useState<Survey | null>(null);
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
@@ -30,18 +32,21 @@ export default function RespondSurvey({ params }: { params: { id: string } }) {
   useEffect(() => {
     const fetchSurvey = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/surveys/${params.id}`);
+        const resolvedParams = await params;
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/surveys/${resolvedParams.id}`);
         if (!response.ok) throw new Error('Survey not found');
         const data = await response.json();
         setSurvey(data);
         setLoading(false);
       } catch (error) {
         setError('Failed to load survey');
+      } finally {
         setLoading(false);
       }
     };
+
     fetchSurvey();
-  }, [params.id]);
+  }, [params]); // params'ı dependency olarak bırakıyoruz
 
   const handleAnswerChange = (questionId: string, value: string | string[]) => {
     setAnswers(prev => ({
@@ -62,7 +67,8 @@ export default function RespondSurvey({ params }: { params: { id: string } }) {
         answer
       }));
   
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/surveys/${params.id}/respond`, {
+      const resolvedParams = await params;
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/surveys/${resolvedParams.id}/respond`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -140,7 +146,7 @@ export default function RespondSurvey({ params }: { params: { id: string } }) {
               {/* Email input */}
               <div className="bg-gray-50 p-6 rounded-lg">
                 <label className="block text-gray-900 font-medium mb-2">
-                  Your Email
+                  Your Email <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
@@ -156,7 +162,7 @@ export default function RespondSurvey({ params }: { params: { id: string } }) {
               {survey.questions.map((question) => (
                 <div key={question._id} className="bg-gray-50 p-6 rounded-lg">
                   <label className="block text-gray-900 font-medium mb-3">
-                    {question.questionText}
+                    {question.questionText} {question.required && <span className="text-red-500">*</span>}
                   </label>
     
                   {question.questionType === 'text' && (
@@ -164,7 +170,7 @@ export default function RespondSurvey({ params }: { params: { id: string } }) {
                       type="text"
                       onChange={(e) => handleAnswerChange(question._id, e.target.value)}
                       className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900"
-                      required
+                      required={question.required}
                     />
                   )}
     
@@ -179,12 +185,9 @@ export default function RespondSurvey({ params }: { params: { id: string } }) {
                             value={option}
                             onChange={(e) => handleAnswerChange(question._id, e.target.value)}
                             className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300"
-                            required
+                            required={question.required}
                           />
-                          <label
-                            htmlFor={`${question._id}-${index}`}
-                            className="ml-3 text-gray-900"
-                          >
+                          <label htmlFor={`${question._id}-${index}`} className="ml-3 text-gray-900">
                             {option}
                           </label>
                         </div>
@@ -208,6 +211,7 @@ export default function RespondSurvey({ params }: { params: { id: string } }) {
                               handleAnswerChange(question._id, newAnswers);
                             }}
                             className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
+                            required={question.required && (answers[question._id] as string[] || []).length === 0}
                           />
                           <label
                             htmlFor={`${question._id}-${index}`}
