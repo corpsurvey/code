@@ -116,7 +116,7 @@ export default function EditSurvey({ params }: { params: { id: string } }) {
     };
 
     fetchSurvey();
-  }, [params.id]);
+  }, [params?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
