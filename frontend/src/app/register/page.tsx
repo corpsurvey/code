@@ -30,6 +30,12 @@ export default function RegisterPage() {
       const data = await response.json();
 
       if (!response.ok) {
+        console.error('Registration Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: data,
+          requestBody: formData
+        });
         throw new Error(data.message || 'Registration failed');
       }
 
@@ -40,6 +46,7 @@ export default function RegisterPage() {
       // Redirect to dashboard or home page
       router.push('/admin');
     } catch (err: Error | unknown) {
+      console.error('Registration Error Details:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
