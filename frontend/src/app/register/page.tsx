@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { handleAuthError } from '@/utils/auth';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
-
+  
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
         method: 'POST',
@@ -26,27 +27,18 @@ export default function RegisterPage() {
         },
         body: JSON.stringify(formData),
       });
-
+  
       const data = await response.json();
-
+  
       if (!response.ok) {
-        console.error('Registration Error:', {
-          status: response.status,
-          statusText: response.statusText,
-          error: data,
-          requestBody: formData
-        });
+        handleAuthError(response.status, router);
         throw new Error(data.message || 'Registration failed');
       }
-
-      // Store the token in localStorage
+  
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
-
-      // Redirect to dashboard or home page
       router.push('/admin');
     } catch (err: Error | unknown) {
-      console.error('Registration Error Details:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
