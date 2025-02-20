@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 
 interface Question {
   text: string;
@@ -23,8 +23,11 @@ interface Survey {
   }[];
 }
 
-export default function EditSurvey({ params }: { params: { id: string } }) {
+export default function EditSurvey() {
   const router = useRouter();
+  const params = useParams();
+  const surveyId = params?.id as string;
+  
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -32,10 +35,12 @@ export default function EditSurvey({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!surveyId) return;
+
     const fetchSurvey = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/surveys/${params.id}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/surveys/${surveyId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -91,16 +96,21 @@ export default function EditSurvey({ params }: { params: { id: string } }) {
                   />
                 </div>
                 <div className="ml-4 flex items-center mt-6">
-                  <input
-                    type="checkbox"
-                    id={`required-${questionIndex}`}
-                    checked={question.required}
-                    onChange={(e) => updateQuestion(questionIndex, 'required', e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <label htmlFor={`required-${questionIndex}`} className="ml-2 text-sm text-gray-600">
-                    Required
-                  </label>
+                  <div className="relative flex items-center">
+                    <input
+                      type="checkbox"
+                      id={`required-${questionIndex}`}
+                      checked={question.required}
+                      onChange={(e) => updateQuestion(questionIndex, 'required', e.target.checked)}
+                      className="h-5 w-5 rounded border-2 border-gray-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 cursor-pointer transition-colors duration-200"
+                    />
+                    <label 
+                      htmlFor={`required-${questionIndex}`} 
+                      className="ml-3 text-sm font-medium text-gray-700 cursor-pointer hover:text-gray-900 transition-colors duration-200"
+                    >
+                      Required
+                    </label>
+                  </div>
                 </div>
               </div>
               
@@ -116,7 +126,7 @@ export default function EditSurvey({ params }: { params: { id: string } }) {
     };
 
     fetchSurvey();
-  }, [params?.id]);
+  }, [surveyId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,10 +215,12 @@ export default function EditSurvey({ params }: { params: { id: string } }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white shadow rounded-lg p-6">
-            <p className="text-center text-gray-500">Loading...</p>
+          <div className="bg-white shadow-lg rounded-xl p-8">
+            <div className="flex items-center justify-center h-32">
+              <p className="text-lg text-gray-500">Loading...</p>
+            </div>
           </div>
         </div>
       </div>
@@ -216,102 +228,118 @@ export default function EditSurvey({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white shadow rounded-lg p-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit Survey</h1>
+        <div className="bg-white shadow-lg rounded-xl p-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-8 border-b pb-4">Edit Survey</h1>
 
           {error && (
-            <div className="bg-red-50 text-red-500 p-4 rounded-md mb-4">
+            <div className="bg-red-50 text-red-500 p-4 rounded-xl mb-6 border border-red-100">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit}>
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-900">Title</label>
+            <div className="space-y-8">
+              <div className="bg-gray-50 p-6 rounded-xl">
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Survey Title</label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900"
+                  className="mt-1 block w-full rounded-xl border-2 border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900 px-4 py-3 bg-white"
                   required
+                  placeholder="Enter survey title"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-900">Description</label>
+              <div className="bg-gray-50 p-6 rounded-xl">
+                <label className="block text-sm font-semibold text-gray-900 mb-2">Survey Description</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900"
+                  className="mt-1 block w-full rounded-xl border-2 border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900 px-4 py-3 min-h-[120px] bg-white resize-y"
                   rows={3}
+                  placeholder="Enter survey description"
                 />
               </div>
 
-              <div>
-                <h2 className="text-lg font-medium text-gray-900 mb-4">Questions</h2>
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-xl font-semibold text-gray-900">Questions</h2>
+                  <button
+                    type="button"
+                    onClick={addQuestion}
+                    className="inline-flex items-center px-4 py-2 border-2 border-indigo-500 text-sm font-medium rounded-xl text-indigo-600 bg-white hover:bg-indigo-50 transition-colors duration-200"
+                  >
+                    + Add Question
+                  </button>
+                </div>
+
                 {questions.map((question, questionIndex) => (
-                  <div key={questionIndex} className="bg-gray-50 p-4 rounded-lg mb-4">
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-start">
+                  <div key={questionIndex} className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                    <div className="space-y-6">
+                      <div className="flex justify-between items-start gap-4">
                         <div className="flex-1">
-                          <label className="block text-sm font-medium text-gray-900">
+                          <label className="block text-sm font-semibold text-gray-900 mb-2">
                             Question Text {question.required && <span className="text-red-500">*</span>}
                           </label>
                           <input
                             type="text"
                             value={question.text}
                             onChange={(e) => updateQuestion(questionIndex, 'text', e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900"
+                            className="block w-full rounded-xl border-2 border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900 px-4 py-3 bg-white"
                             required
+                            placeholder="Enter your question"
                           />
                         </div>
-                        <div className="ml-4 flex items-center mt-6">
+                        <div className="flex items-center mt-8">
                           <input
                             type="checkbox"
                             id={`required-${questionIndex}`}
                             checked={question.required}
                             onChange={(e) => updateQuestion(questionIndex, 'required', e.target.checked)}
-                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            className="h-5 w-5 rounded border-2 border-gray-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 cursor-pointer transition-colors duration-200"
                           />
-                          <label htmlFor={`required-${questionIndex}`} className="ml-2 text-sm text-gray-600">
+                          <label 
+                            htmlFor={`required-${questionIndex}`} 
+                            className="ml-3 text-sm font-medium text-gray-700 cursor-pointer hover:text-gray-900 transition-colors duration-200"
+                          >
                             Required
                           </label>
                         </div>
                       </div>
-                      
+
                       <div>
-                        <label className="block text-sm font-medium text-gray-900">Question Type</label>
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">Question Type</label>
                         <select
                           value={question.type}
                           onChange={(e) => updateQuestion(questionIndex, 'type', e.target.value)}
-                          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900"
+                          className="block w-full rounded-xl border-2 border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900 px-4 py-3 bg-white"
                         >
-                          <option value="text">Text</option>
+                          <option value="text">Text Answer</option>
                           <option value="multipleChoice">Multiple Choice</option>
                           <option value="checkbox">Checkbox</option>
                         </select>
                       </div>
 
                       {(question.type === 'multipleChoice' || question.type === 'checkbox') && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-900">Options</label>
+                        <div className="space-y-4">
+                          <label className="block text-sm font-semibold text-gray-900">Options</label>
                           {question.options.map((option, optionIndex) => (
-                            <div key={optionIndex} className="mt-2 flex items-center space-x-2">
+                            <div key={optionIndex} className="flex items-center gap-2">
                               <input
                                 type="text"
                                 value={option}
                                 onChange={(e) => updateOption(questionIndex, optionIndex, e.target.value)}
-                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900"
+                                className="block w-full rounded-xl border-2 border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-gray-900 px-4 py-3 bg-white"
                                 placeholder={`Option ${optionIndex + 1}`}
                                 required
                               />
                               <button
                                 type="button"
                                 onClick={() => removeOption(questionIndex, optionIndex)}
-                                className="text-red-600 hover:text-red-700"
+                                className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors duration-200"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                   <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
@@ -322,36 +350,28 @@ export default function EditSurvey({ params }: { params: { id: string } }) {
                           <button
                             type="button"
                             onClick={() => addOption(questionIndex)}
-                            className="mt-2 text-sm text-indigo-600 hover:text-indigo-500"
+                            className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
                           >
-                            Add Option
+                            + Add Option
                           </button>
                         </div>
                       )}
                     </div>
                   </div>
                 ))}
-
-                <button
-                  type="button"
-                  onClick={addQuestion}
-                  className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-600 bg-indigo-100 hover:bg-indigo-200"
-                >
-                  Add Question
-                </button>
               </div>
 
-              <div className="flex justify-end space-x-3">
+              <div className="flex justify-end gap-4 pt-6 border-t">
                 <button
                   type="button"
-                  onClick={() => router.push('/admin')}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  onClick={() => router.push('/admin/surveys')}
+                  className="px-6 py-3 border-2 border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+                  className="px-6 py-3 border-2 border-transparent rounded-xl text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors duration-200"
                 >
                   Update Survey
                 </button>
