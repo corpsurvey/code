@@ -14,8 +14,9 @@ interface Answer {
   answer: string | string[];
 }
 
+// Önce interface'i güncelle
 interface Response {
-  email: string;
+  ipAddress: string; // email yerine ipAddress
   answers: Answer[];
   submittedAt: string;
 }
@@ -167,14 +168,14 @@ export default function ViewSurvey({ params }: { params: Promise<{ id: string }>
     const workbook = new ExcelJS.Workbook();
     const detailsSheet = workbook.addWorksheet('Survey Responses');
   
-    // Add headers
-    const headers = ['Email', 'Submitted Date', ...survey.questions.map(q => q.questionText)];
+    // Update headers
+    const headers = ['IP Address', 'Submitted Date', ...survey.questions.map(q => q.questionText)];
     detailsSheet.addRow(headers);
   
-    // Add all responses
+    // Update row data
     survey.responses.forEach(response => {
       const row = [
-        response.email,
+        response.ipAddress,
         new Date(response.submittedAt).toLocaleDateString(),
         ...survey.questions.map(question => {
           const answer = response.answers.find(a => a.questionId === question._id);
@@ -202,102 +203,144 @@ export default function ViewSurvey({ params }: { params: Promise<{ id: string }>
   
   // In the return statement, add the export button next to the back button
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="bg-white shadow rounded-lg p-6">
-          <div className="mb-6 flex justify-between items-center">
+        <div className="bg-white shadow-xl rounded-2xl p-8">
+          {/* Header Section */}
+          <div className="mb-8 flex justify-between items-center">
             <button
               onClick={() => router.back()}
-              className="text-gray-600 hover:text-gray-900"
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors duration-200"
             >
-              ← Back
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back
             </button>
             <button
               onClick={handleExport}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2"
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl flex items-center gap-2 transition-colors duration-200"
             >
-              <span>Export to Excel</span>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Export to Excel
             </button>
           </div>
-
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">{survey.title}</h1>
-          <p className="text-gray-600 mb-8">{survey.description}</p>
-
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Questions</h2>
-            {survey.questions.map((question) => (
-              <div key={question._id} className="bg-gray-50 p-4 rounded-lg mb-4">
-                <p className="font-medium text-gray-900">{question.questionText}</p>
-                {question.options && (
-                  <div className="mt-2 text-gray-600">
-                    Options: {question.options.join(', ')}
-                  </div>
-                )}
-              </div>
-            ))}
+  
+          {/* Survey Title Section */}
+          <div className="mb-10 text-center">
+            <h1 className="text-3xl font-bold text-gray-900 mb-3">{survey.title}</h1>
+            <p className="text-gray-600 text-lg">{survey.description}</p>
           </div>
-
-          {/* Add charts section here */}
+  
+          {/* Analytics Section */}
           {renderCharts()}
-
+  
+          {/* Questions Section */}
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Questions</h2>
+            <div className="grid gap-4">
+              {survey.questions.map((question) => (
+                <div key={question._id} className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-indigo-100 rounded-lg p-2">
+                      <span className="text-indigo-600 font-medium">{question.questionType === 'text' ? 'Aa' : '☑'}</span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{question.questionText}</p>
+                      {question.options && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {question.options.map((option, idx) => (
+                            <span key={idx} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700">
+                              {option}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+  
+          {/* Responses Section */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Responses ({survey.responses.length})</h2>
-            <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-lg">
-              <table className="min-w-full divide-y divide-gray-300">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Responses</h2>
+              <span className="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-xl font-medium">
+                Total: {survey.responses.length}
+              </span>
+            </div>
+  
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Email</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Submitted Date</th>
-                    <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">Actions</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">IP Address</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Submitted Date</th>
+                    <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
+                <tbody className="divide-y divide-gray-200">
                   {survey.responses.map((response, index) => (
-                    <React.Fragment key={response.email + '-' + index}>
-                      <tr className="hover:bg-gray-50">
-                        <td className="px-6 py-4 text-sm text-gray-900">{response.email}</td>
+                    <React.Fragment key={response.ipAddress + '-' + index}>
+                      <tr className="hover:bg-gray-50 transition-colors duration-150">
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700">
+                            {response.ipAddress}
+                          </span>
+                        </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
-                          {new Date(response.submittedAt).toLocaleDateString()}
+                          {new Date(response.submittedAt).toLocaleString()}
                         </td>
                         <td className="px-6 py-4 text-right">
                           <button
                             onClick={() => setExpandedResponse(expandedResponse === index ? null : index)}
-                            className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+                            className="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium text-indigo-600 hover:bg-indigo-50 transition-colors duration-200"
                           >
                             {expandedResponse === index ? 'Hide Details' : 'View Details'}
+                            <svg className={`ml-2 w-4 h-4 transform transition-transform duration-200 ${expandedResponse === index ? 'rotate-180' : ''}`} 
+                                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
                           </button>
                         </td>
                       </tr>
                       {expandedResponse === index && (
                         <tr>
                           <td colSpan={3} className="px-6 py-4 bg-gray-50">
-                            <div className="space-y-2">
+                            <div className="space-y-4">
                               {response.answers.map((answer, i) => {
                                 const question = survey.questions.find(q => q._id === answer.questionId);
-                                // Boş array veya boş string kontrolü ekleyelim
                                 if (!answer.answer || (Array.isArray(answer.answer) && answer.answer.length === 0)) {
                                   return null;
                                 }
                                 return (
-                                  <div key={i} className="ml-4">
-                                    <p className="text-gray-700 font-medium">{question?.questionText}:</p>
-                                    <p className="text-gray-900 ml-2">
+                                  <div key={i} className="bg-white p-4 rounded-xl border border-gray-200">
+                                    <p className="text-gray-700 font-medium mb-2">{question?.questionText}</p>
+                                    <div className="ml-4">
                                       {question?.questionType === 'checkbox' ? (
                                         Array.isArray(answer.answer) ? (
-                                          <span className="space-x-1">
+                                          <div className="flex flex-wrap gap-2">
                                             {answer.answer
-                                              .filter(option => option && option.trim() !== '') // Boş option'ları filtrele
+                                              .filter(option => option && option.trim() !== '')
                                               .map((option, idx) => (
-                                                <span key={idx} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                <span key={idx} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-700">
                                                   {option}
                                                 </span>
                                               ))}
-                                            </span>
-                                          ) : answer.answer
+                                          </div>
                                         ) : (
-                                          Array.isArray(answer.answer) ? answer.answer.join(', ') : answer.answer
-                                        )}
-                                    </p>
+                                          <span className="text-gray-900">{answer.answer}</span>
+                                        )
+                                      ) : (
+                                        <span className="text-gray-900">
+                                          {Array.isArray(answer.answer) ? answer.answer.join(', ') : answer.answer}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 );
                               })}
@@ -310,7 +353,9 @@ export default function ViewSurvey({ params }: { params: Promise<{ id: string }>
                 </tbody>
               </table>
               {survey.responses.length === 0 && (
-                <p className="text-gray-600 text-center p-4">No responses yet</p>
+                <div className="text-center py-12">
+                  <p className="text-gray-500 text-lg">No responses yet</p>
+                </div>
               )}
             </div>
           </div>

@@ -53,17 +53,11 @@ const surveySchema = new mongoose.Schema({
     type: Date
   },
   // Add this to the surveySchema responses section
+  // responses içindeki şemayı güncelle
   responses: [{
-    email: {
-      type: String,
-      required: true,
-      trim: true
-    },
+    ipAddress: String,
     answers: [{
-      questionId: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true
-      },
+      questionId: String,
       answer: mongoose.Schema.Types.Mixed
     }],
     submittedAt: {

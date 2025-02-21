@@ -78,21 +78,19 @@ router.post('/:id/respond', async (req, res) => {
       return res.status(404).json({ message: 'Survey not found' });
     }
 
-    const { email, answers } = req.body;
+    const { answers } = req.body;
+    const clientIp = req.ip || req.connection.remoteAddress;
 
-    if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
-    }
-
-    // Check if email has already submitted a response
-    const hasResponded = survey.responses.some(response => response.email === email);
+    // Check if IP has already submitted a response
+    const hasResponded = survey.responses.some(response => response.ipAddress === clientIp);
     if (hasResponded) {
       return res.status(400).json({ message: 'You have already submitted a response to this survey' });
     }
 
     const response = {
-      email,
-      answers
+      answers,
+      ipAddress: clientIp,
+      submittedAt: new Date()
     };
 
     survey.responses.push(response);
